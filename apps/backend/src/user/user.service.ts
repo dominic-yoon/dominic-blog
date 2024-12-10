@@ -53,4 +53,14 @@ export class UserService {
 
 		await this.userRepository.deleteUser(userId);
 	}
+
+	async login(userId: string, password: string) {
+		const user = await this.userRepository.getUser(userId, password);
+
+		if (!user) {
+			throw new NotFoundException(`User with ID ${userId} not found`);
+		}
+
+		return user;
+	}
 }
