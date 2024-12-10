@@ -1,58 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
 import { UserRepository } from './user.repository';
+import { CreateUserDto } from './DTO/create-user.dto';
+import { UpdateUserDto } from './DTO/update-user.dto';
 import { User } from './user.schema';
 
 @Injectable()
 export class UserService {
 	constructor(private readonly userRepository: UserRepository) {}
 
-	async createUser({ userId, userName, password }: User) {
+	async createUser(createUserDto: CreateUserDto): Promise<User> {
+		const { userId } = createUserDto;
 		const existingUser = await this.userRepository.findUserById(userId);
 
 		if (existingUser) {
-			throw new Error('Id already exists');
+			throw new BadRequestException('User Id already exists');
 		}
 
-		if (!userId || typeof userId !== 'string') {
-			throw new Error('Invalid userId');
-		}
-
-		if (!userName || typeof userName !== 'string') {
-			throw new Error('Invalid userName');
-		}
-
-		if (!password || typeof password !== 'string') {
-			throw new Error('Invalid password');
-		}
-
-		const newUser = await this.userRepository.createUser({
-			userId,
-			userName,
-			password,
-		});
-		return newUser;
+		return await this.userRepository.createUser(createUserDto);
 	}
 
-	async getUserById(id: string) {
-		const user = await this.userRepository.findUserById(id);
+	async getUserById(userId: string): Promise<User> {
+		const user = await this.userRepository.findUserById(userId);
+
+		if (!user) {
+			throw new NotFoundException(`User with Id ${userId} not found`);
+		}
 
 		return user;
 	}
 
-	async updateUserById(updateUserDto: any) {
-		if (!updateUserDto.userId || typeof updateUserDto.userId !== 'string') {
-			throw new Error('Invalid userId');
-		}
-
+	async updateUserById(updateUserDto: UpdateUserDto): Promise<User> {
 		const updateUser =
 			await this.userRepository.updateUserById(updateUserDto);
+
+		if (!updateUser) {
+			throw new NotFoundException(`User with ID ${updateUser} not found`);
+		}
 
 		return updateUser;
 	}
 
-	async deleteUserById(userId: string) {
-		const deleteUser = await this.userRepository.deleteUser(userId);
+	async deleteUserById(userId: string): Promise<void> {
+		const deleteUser = await this.userRepository.findUserById(userId);
 
-		return deleteUser;
+		if (!deleteUser) {
+			throw new NotFoundException(`User with ID ${deleteUser} not found`);
+		}
+
+		await this.userRepository.deleteUser(userId);
 	}
 }

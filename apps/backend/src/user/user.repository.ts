@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { Model } from 'mongoose';
+import { CreateUserDto } from './DTO/create-user.dto';
+import { UpdateUserDto } from './DTO/update-user.dto';
 
 @Injectable()
 export class UserRepository {
@@ -9,7 +11,7 @@ export class UserRepository {
 		@InjectModel(User.name) private readonly userModel: Model<User>
 	) {}
 
-	async createUser(createUserDto: User): Promise<User> {
+	async createUser(createUserDto: CreateUserDto): Promise<User> {
 		const newUser = new this.userModel(createUserDto);
 
 		return await newUser.save();
@@ -19,7 +21,11 @@ export class UserRepository {
 		return await this.userModel.findOne({ userId }).exec();
 	}
 
-	async updateUserById({ userId, userName, password }: any) {
+	async updateUserById({
+		userId,
+		userName,
+		password,
+	}: UpdateUserDto): Promise<User | null> {
 		const updateData: any = {};
 		if (userName) updateData.userName = userName;
 		if (password) updateData.password = password;
@@ -29,10 +35,6 @@ export class UserRepository {
 			{ $set: updateData },
 			{ new: true }
 		);
-
-		if (!ret) {
-			throw new NotFoundException(`User with ID ${userId} not found`);
-		}
 
 		return ret;
 	}
