@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import * as crypto from 'crypto';
+
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './DTO/create-user.dto';
 import { UpdateUserDto } from './DTO/update-user.dto';
+import { hashedPassword } from 'src/utils/hashedPassword';
 
 @Injectable()
 export class UserRepository {
@@ -11,8 +14,16 @@ export class UserRepository {
 		@InjectModel(User.name) private readonly userModel: Model<User>
 	) {}
 
-	async createUser(createUserDto: CreateUserDto): Promise<User> {
-		const newUser = new this.userModel(createUserDto);
+	async createUser({
+		userId,
+		userName,
+		password,
+	}: CreateUserDto): Promise<User> {
+		const newUser = new this.userModel({
+			userId,
+			userName,
+			password: hashedPassword(password),
+		});
 
 		return await newUser.save();
 	}
@@ -28,7 +39,7 @@ export class UserRepository {
 	}: UpdateUserDto): Promise<User | null> {
 		const updateData: any = {};
 		if (userName) updateData.userName = userName;
-		if (password) updateData.password = password;
+		if (password) updateData.password = hashedPassword(password);
 
 		const ret = await this.userModel.findOneAndUpdate(
 			{ userId },
@@ -41,5 +52,16 @@ export class UserRepository {
 
 	async deleteUser(userId: string): Promise<void> {
 		await this.userModel.deleteOne({ userId }).exec();
+	}
+
+	async getUser(userId: string, password: string) {
+		const ret = await this.userModel
+			.findOne(
+				{ userId, password: hashedPassword(password) },
+				{ _v: 0, password: 0 }
+			)
+			.lean();
+
+		return { id: ret.userId, name: ret.userName };
 	}
 }
