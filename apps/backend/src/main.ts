@@ -1,3 +1,5 @@
+import * as session from 'express-session';
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
@@ -19,6 +21,18 @@ async function bootstrap() {
 		origin: '*',
 		credentials: true,
 	});
+
+	// 세션 미들웨어 설정
+	app.use(
+		session({
+			secret: configService.get<string>('SESSION_KEY'),
+			resave: false,
+			saveUninitialized: false,
+			cookie: {
+				maxAge: 3600000, // 1시간
+			},
+		})
+	);
 
 	const port = configService.get<number>('BACKEND_PORT');
 
