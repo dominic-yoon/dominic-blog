@@ -5,6 +5,7 @@ import { PostRepository } from './post.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './post.schema';
 import { User, UserSchema } from 'src/user/user.schema';
+import { AuthService } from 'src/auth/auth.service';
 
 @Module({
 	imports: [
@@ -13,7 +14,7 @@ import { User, UserSchema } from 'src/user/user.schema';
 			{ name: User.name, schema: UserSchema },
 		]),
 	],
-	providers: [PostRepository, PostService],
+	providers: [PostRepository, PostService, AuthService],
 	controllers: [PostController],
 	exports: [PostRepository],
 })

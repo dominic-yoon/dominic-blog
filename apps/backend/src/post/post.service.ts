@@ -4,10 +4,14 @@ import { CreatePostDto } from './DTO/create-post.dto';
 import { SearchQueryDto } from './DTO/search-query.dto';
 import { UpdatePostDto } from './DTO/update-post.dto';
 import { Post } from './post.schema';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class PostService {
-	constructor(private readonly postRepository: PostRepository) {}
+	constructor(
+		private readonly postRepository: PostRepository,
+		private readonly authService: AuthService
+	) {}
 
 	async createPost(createPostData: CreatePostDto): Promise<Post> {
 		const newPost = await this.postRepository.createPost(createPostData);
@@ -35,8 +39,11 @@ export class PostService {
 
 	async updatePostById(
 		id: string,
+		userId: string,
 		updatePostDto: UpdatePostDto
 	): Promise<Post> {
+		await this.authService.validatePost(id, userId);
+
 		const updatePost = await this.postRepository.updatePostById(
 			id,
 			updatePostDto
@@ -49,7 +56,12 @@ export class PostService {
 		return updatePost;
 	}
 
-	async deletePostById(id: string): Promise<{ deletedCount: number }> {
+	async deletePostById(
+		id: string,
+		userId: string
+	): Promise<{ deletedCount: number }> {
+		await this.authService.validatePost(id, userId);
+
 		const deletePost = await this.postRepository.deletePostById(id);
 
 		if (!deletePost) {

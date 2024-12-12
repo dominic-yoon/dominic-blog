@@ -94,7 +94,7 @@ export class PostRepository {
 	async getPostById(id: string) {
 		const post = await this.postModel
 			.findOne({ _id: new mongoose.Types.ObjectId(id) }, { _v: 0 })
-			.populate('author', 'userName')
+			.populate('author', 'userId')
 			.lean();
 
 		return post;
@@ -120,13 +120,17 @@ export class PostRepository {
 		return deletePost;
 	}
 
-	async getPostAuthorById(id: string) {
-		const author = await this.postModel
+	async getPostAuthorById(id: string): Promise<{ author: User }> {
+		const post = await this.postModel
 			.findById(id)
-			.populate('author', 'userId')
+			.populate<{ author: User }>('author', 'userId')
 			.select('author')
 			.lean();
 
-		return author;
+		if (!post?.author) {
+			throw new Error('Author not found');
+		}
+
+		return post;
 	}
 }

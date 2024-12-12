@@ -7,6 +7,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Request,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './DTO/create-post.dto';
@@ -60,10 +61,13 @@ export class PostController {
 	@Put(':id')
 	async updatePostById(
 		@Param('id') id: string,
-		@Body() updatePostDto: UpdatePostDto
+		@Body() updatePostDto: UpdatePostDto,
+		@Request() req: any
 	): Promise<{ success: boolean; message: string; data: PostEntity }> {
+		const userId = req.session.user.userId;
 		const updatedPost = await this.postService.updatePostById(
 			id,
+			userId,
 			updatePostDto
 		);
 
@@ -76,9 +80,11 @@ export class PostController {
 
 	@Delete(':id')
 	async deletePostById(
-		@Param('id') id: string
+		@Param('id') id: string,
+		@Request() req: any
 	): Promise<{ success: boolean; message: string }> {
-		await this.postService.deletePostById(id);
+		const userId = req.session.user.userId;
+		await this.postService.deletePostById(id, userId);
 
 		return {
 			success: true,
