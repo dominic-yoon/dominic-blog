@@ -5,6 +5,7 @@ import mongoose, { Model } from 'mongoose';
 import { CreatePostDto } from './DTO/create-post.dto';
 import { SearchQueryDto } from './DTO/search-query.dto';
 import { UpdatePostDto } from './DTO/update-post.dto';
+import { User } from 'src/user/user.schema';
 
 const transformUser = (post: any): PostDocument => {
 	const { _id, author, ...rest } = post;
@@ -19,7 +20,8 @@ const transformUser = (post: any): PostDocument => {
 @Injectable()
 export class PostRepository {
 	constructor(
-		@InjectModel(Post.name) private readonly postModel: Model<Post>
+		@InjectModel(Post.name) private readonly postModel: Model<Post>,
+		@InjectModel(User.name) private readonly userModel: Model<User>
 	) {}
 
 	async createPost(createPostData: CreatePostDto) {
@@ -34,8 +36,9 @@ export class PostRepository {
 		keyword,
 		filters,
 	}: SearchQueryDto) {
-		const searchQuery = keyword ? { $text: { $search: keyword } } : {};
 		const skip = (page - 1) * limit;
+
+		const searchQuery = await this.buildSearchQuery(filters, keyword);
 
 		const posts = await this.postModel
 			.find(searchQuery)
@@ -54,6 +57,38 @@ export class PostRepository {
 			totalCount,
 			totalPage,
 		};
+	}
+
+	private async buildSearchQuery(filters: string, keyword: string) {
+		if (filters === 'title') {
+			return { title: { $regex: keyword, $options: 'i' } };
+		}
+
+		if (filters === 'contents') {
+			return { contents: { $regex: keyword, $options: 'i' } };
+		}
+
+		if (filters === 'author') {
+			if (!keyword || keyword.trim() === '') {
+				return {};
+			}
+
+			const author = await this.userModel
+				.findOne({ userId: { $regex: keyword, $options: 'i' } })
+				.lean();
+
+			if (author) {
+				return { author: author._id };
+			} else {
+				return { _id: null };
+			}
+		}
+
+		if (keyword && keyword.trim() !== '') {
+			return { $text: { $search: keyword } };
+		}
+
+		return {};
 	}
 
 	async getPostById(id: string) {
