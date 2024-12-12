@@ -1,5 +1,3 @@
-import * as crypto from 'crypto';
-
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
